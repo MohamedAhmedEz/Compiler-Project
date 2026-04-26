@@ -1,4 +1,4 @@
-package shared;
+package Shared;
 
 /**
  * Enum of all valid tokens in the TinyCalc language.

@@ -1,4 +1,4 @@
-package shared;
+package Shared;
 
 /**
  * Interface that the Parser will rely on.
