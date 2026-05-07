@@ -1,8 +1,6 @@
 package Shared;
 
-/**
- * The data transfer object passed from the Scanner.java to the Parser.
- */
+
 public class Token {
     private final TokenType type;
     private final String lexeme;

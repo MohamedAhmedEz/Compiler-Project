@@ -8,7 +8,6 @@ public class ScannerTester {
     private final String sourceCode;
 
     public ScannerTester() {
-        // Define the sample source string testing all token types
         this.sourceCode =
                 "// This is a TinyCalc test program\n" +
                         "read x;\n" +
@@ -18,18 +17,20 @@ public class ScannerTester {
     }
 
     public void runTest() {
-        System.out.println("--- Source Code ---");
+        System.out.println("=== Source Code ===");
         System.out.println(sourceCode);
-        System.out.println("\n--- Scanner Output ---");
+        System.out.println("\n=== Scanner Output ===");
 
         Scanner scanner = new Scanner(sourceCode);
-        Token token;
+        Token   token;
 
         do {
             token = scanner.getNextToken();
-            System.out.printf("Token: %-12s | Lexeme: '%s'%n", token.getType(), token.getLexeme());
-        } while (token.getType() == TokenType.EOF);
+            System.out.printf("  %-12s | lexeme=%-12s | line=%d, col=%d%n",
+                    token.getType(),
+                    "'" + token.getLexeme() + "'",
+                    token.getLine(),
+                    token.getColumn());
+        } while (token.getType() != TokenType.EOF);
     }
-
-
 }

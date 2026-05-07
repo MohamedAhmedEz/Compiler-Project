@@ -1,55 +1,96 @@
-import Shared.Token;
+import AST.ASTPrinter;
+import AST.Program;
+import Interpreter.Interpreter;
+import Interpreter.InterpreterTester;
+import Interpreter.RuntimeError;
 import Lexer.Scanner;
-import Shared.TokenType;
-
-import java.util.regex.Matcher;
-
-
+import Parser.ParseError;
+import Parser.Parser;
+import Parser.ParserTester;
+import Shared.IScanner;
 import Shared.Token;
 import Shared.TokenType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        // 1. Define a sample source string testing all token types
-        String sourceCode =
-                "// This is a TinyCalc test program\n" +
-                        "read x;\n" +
-                        "y := x + 10 * (5 ^ 2);\n" +
-                        "print y % 3;\n" +
-                        "@ // This unknown character should trigger an ERROR token";
 
-        System.out.println("--- Source Code ---");
-        System.out.println(sourceCode);
-        System.out.println("\n--- Scanner Output ---");
+        System.out.println("   TinyCalc Script Language Pipeline");
+        System.out.println("   Scanner -> Parser -> AST -> Interpreter");
+        System.out.println("------------------------------------------------\n");
 
-        // 2. Initialize the Scanner (your string-chopping version)
-        Scanner scanner = new Scanner(sourceCode);
+
+        runFullPipelineDemo();
+
+        System.out.println("\n------------------------------------------------");
+        System.out.println("             Parser Test Suite");
+        System.out.println("------------------------------------------------\n");
+        new ParserTester().runTest();
+
+        System.out.println("\n------------------------------------------------");
+        System.out.println("           Interpreter Test Suite");
+        System.out.println("------------------------------------------------\n");
+        new InterpreterTester().runTests();
+    }
+
+    private static void runFullPipelineDemo() {
+
+        String source =
+                "x := 10;\n" +
+                        "y := x + 5;\n" +
+                        "print y;\n" +
+                        "\n" +
+                        "// Exponentiation & modulo\n" +
+                        "z := 2 ^ 3 ^ 2;\n" +
+                        "w := z % 100;\n" +
+                        "print w;\n" +
+                        "\n" +
+                        "a := -5;\n" +
+                        "b := a * (2 + 3);\n" +
+                        "print b;";
+
+        System.out.println("-- Full Pipeline Demo --");
+        System.out.println("Source:");
+        System.out.println(source);
+
+        // Phase 1: Scan
+        System.out.println("\n-- Phase 1: Scanner --");
+        IScanner scanner2 = new Scanner(source);
         Token token;
-
-        // 3. Loop through the tokens until we hit EOF
+        List<Token> allTokens = new ArrayList<>();
         do {
-            token = scanner.getNextToken();
+            token = scanner2.getNextToken();
+            allTokens.add(token);
+        } while (token.getType() != TokenType.EOF);
+        System.out.println("Total tokens: " + allTokens.size());
 
-            // Assuming your Token class has public getters or is a Record.
-            // Adjust the accessor methods (like .getType() or .getLexeme()) if yours are named differently.
-            // Using printf for a clean, aligned output table
-            System.out.printf("Token: %-12s | Lexeme: '%s'%n", typeExtractor(token), lexemeExtractor(token));
+        // Phase 2: Parse -> AST
+        System.out.println("\n-- Phase 2: Parser -> AST --");
+        try {
+            IScanner scanForParser = new Scanner(source);
+            Parser parser = new Parser(scanForParser);
+            Program program = parser.parse();
 
-        } while (!isEOF(token));
-    }
+            ASTPrinter printer = new ASTPrinter();
+            program.accept(printer);
+            System.out.println(printer.getResult());
 
-    // Helper methods just in case your Token class uses different getter names
-    private static String typeExtractor(Token token) {
-        // Replace this with token.getType().name() or similar depending on your Shared.Token implementation
-        return token.getType() != null ? token.getType().name() : "UNKNOWN_TYPE";
-    }
+            // Phase 3: Interpret
+            System.out.println("-- Phase 3: Interpreter --");
+            System.out.println("Output:");
+            Interpreter interpreter = new Interpreter();
+            interpreter.execute(program);
 
-    private static String lexemeExtractor(Token token) {
-        // Replace this with token.getLexeme() depending on your Shared.Token implementation
-        return token.getType() != null ? token.getLexeme() : "";
-    }
+            System.out.println("\n-- Symbol Table After Execution --");
+            System.out.println(interpreter.getSymbolTable());
 
-    private static boolean isEOF(Token token) {
-        return token.getType() == TokenType.EOF;
+        } catch (ParseError e) {
+            System.out.println("Parse error: " + e);
+        } catch (RuntimeError e) {
+            System.out.println("Runtime error: " + e);
+        }
+        System.out.println();
     }
 }
