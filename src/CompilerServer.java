@@ -9,6 +9,7 @@ import Parser.Parser;
 import Parser.ParseError;
 import Shared.Token;
 import Shared.TokenType;
+import Analysis.SemanticAnalyzer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,14 +30,14 @@ public class CompilerServer {
         server.setExecutor(null); // Use default executor
         server.start();
 
-        System.out.println("Zero-Dependency Compiler API is running on http://localhost:8080");
+        System.out.println("Zero-Dependency Compiler API is running on http://localhost:5173");
     }
 
     static class CompileHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             // 1. Handle CORS so React can connect
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "http://localhost:5173");
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
 
@@ -72,7 +73,7 @@ public class CompilerServer {
 
         private String compileToJson(String source) {
             try {
-                // Gather Tokens
+                // 1. Lexical Analysis: Gather Tokens for the frontend grid
                 List<Token> allTokens = new ArrayList<>();
                 Scanner tokenScanner = new Scanner(source);
                 Token t;
@@ -81,29 +82,45 @@ public class CompilerServer {
                     allTokens.add(t);
                 } while (t.getType() != TokenType.EOF);
 
-                // Parse AST
+                // 2. Syntax Analysis: Build the AST
                 Parser parser = new Parser(new Scanner(source));
                 Program program = parser.parse();
 
-                // Get DOT String
+                // 3. Semantic Analysis: Simple variable initialization check
+                // We do this BEFORE visualization to ensure the code is valid
+                try {
+                    Analysis.SemanticAnalyzer analyzer = new Analysis.SemanticAnalyzer();
+                    analyzer.analyze(program);
+                } catch (RuntimeException semanticError) {
+                    // If initialization check fails, we return success: false
+                    // but still send the tokens so the editor can highlight them
+                    return String.format(
+                            "{\"success\": false, \"messages\": [\"%s\"], \"tokens\": %s, \"astDot\": \"\"}",
+                            escapeJson(semanticError.getMessage()),
+                            tokensToJsonArray(allTokens)
+                    );
+                }
+
+                // 4. Visualization: If all checks pass, generate the Graphviz DOT string
                 String dotOutput = new ASTVisualizer().toDotFormat(program);
 
                 // Convert the Token list into a JSON Array string
                 String tokensJsonArray = tokensToJsonArray(allTokens);
 
-                // Include the tokens in the final JSON string!
                 return String.format(
-                        "{\"success\": true, \"messages\": [\"Parsed successfully\"], \"tokens\": %s, \"astDot\": \"%s\"}",
+                        "{\"success\": true, \"messages\": [\"Parsed and Validated successfully\"], \"tokens\": %s, \"astDot\": \"%s\"}",
                         tokensJsonArray,
                         escapeJson(dotOutput)
                 );
 
             } catch (ParseError e) {
+                // Handle Syntax Errors (e.g., missing semicolons)
                 return String.format(
                         "{\"success\": false, \"messages\": [\"Syntax Error: %s\"], \"tokens\": [], \"astDot\": \"\"}",
                         escapeJson(e.getMessage())
                 );
             } catch (Exception e) {
+                // Handle unexpected crashes
                 return "{\"success\": false, \"messages\": [\"Internal Server Error\"], \"tokens\": [], \"astDot\": \"\"}";
             }
         }
