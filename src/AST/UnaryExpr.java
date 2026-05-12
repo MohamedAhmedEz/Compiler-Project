@@ -13,8 +13,5 @@ public class UnaryExpr extends Expression {
     public String getOperator() { return operator; }
     public Expression getOperand() { return operand; }
 
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+
 }

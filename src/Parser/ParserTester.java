@@ -1,6 +1,7 @@
 package Parser;
 
 import AST.ASTPrinter;
+import AST.ASTVisualizer;
 import AST.Program;
 import Lexer.Scanner;
 import Shared.IScanner;
@@ -78,10 +79,19 @@ public class ParserTester {
             Parser parser = new Parser(scanner);
             Program program = parser.parse();
 
-            ASTPrinter printer = new ASTPrinter();
-            program.accept(printer);
+            /*ASTPrinter printer = new ASTPrinter();
+            printer.print(program);
             System.out.println("AST:");
-            System.out.println(printer.getResult());
+            System.out.println(printer.getResult());*/
+
+            ASTVisualizer visualizer = new ASTVisualizer();
+            String dotOutput = visualizer.toDotFormat(program);
+
+            System.out.println("AST Graphviz (DOT) Output:");
+            System.out.println("========================================\n");
+            System.out.println(dotOutput);
+            System.out.println("========================================\n");
+
         } catch (ParseError e) {
             System.out.println("UNEXPECTED ERROR: " + e);
         }
@@ -99,10 +109,19 @@ public class ParserTester {
             Parser parser = new Parser(scanner);
             Program program = parser.parse();
 
-            ASTPrinter printer = new ASTPrinter();
-            program.accept(printer);
+            /*ASTPrinter printer = new ASTPrinter();
+            printer.print(program);
             System.out.println("AST (partial - error expected):");
-            System.out.println(printer.getResult());
+            System.out.println(printer.getResult());*/
+
+            ASTVisualizer visualizer = new ASTVisualizer();
+            String dotOutput = visualizer.toDotFormat(program);
+
+            System.out.println("AST Graphviz (DOT) Output:");
+            System.out.println("========================================\n");
+            System.out.println(dotOutput);
+            System.out.println("========================================\n");
+
         } catch (ParseError e) {
             System.out.println("Caught error (expected): " + e);
         }

@@ -201,7 +201,6 @@ public class Parser implements IParser {
 
     /**
      * power → primary (POW unary)?
-     *
      * Right-associative:  2 ^ 3 ^ 4  →  2 ^ (3 ^ 4)
      * The exponent calls parseUnary() which will eventually call
      * parsePower() again, producing the right-recursive nesting.

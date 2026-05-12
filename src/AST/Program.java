@@ -12,8 +12,5 @@ public class Program extends ASTNode {
 
     public List<Statement> getStatements() { return statements; }
 
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+
 }

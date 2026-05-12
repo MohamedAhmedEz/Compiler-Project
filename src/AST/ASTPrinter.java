@@ -1,6 +1,6 @@
 package AST;
 
-public class ASTPrinter implements ASTVisitor<Void> {
+public class ASTPrinter {
 
     private final StringBuilder sb = new StringBuilder();
     private int indentLevel = 0;
@@ -16,88 +16,67 @@ public class ASTPrinter implements ASTVisitor<Void> {
         return sb.toString().trim();
     }
 
-
-    @Override
-    public Void visit(Program node) {
-        emit("Program");
-        indentLevel++;
-        for (Statement stmt : node.getStatements()) {
-            stmt.accept(this);
+    public void print(ASTNode node) {
+        switch (node) {
+            case Program p -> {
+                emit("Program");
+                indentLevel++;
+                for (Statement stmt : p.getStatements()) {
+                    print(stmt); // Recursive call
+                }
+                indentLevel--;
+            }
+            case AssignStmt a -> {
+                emit("AssignStmt [" + a.getLine() + ":" + a.getColumn() + "]");
+                indentLevel++;
+                emit("variable: " + a.getVariableName());
+                emit("value:");
+                indentLevel++;
+                print(a.getExpression());
+                indentLevel--;
+                indentLevel--;
+            }
+            case PrintStmt p -> {
+                emit("PrintStmt [" + p.getLine() + ":" + p.getColumn() + "]");
+                indentLevel++;
+                print(p.getExpression());
+                indentLevel--;
+            }
+            case ReadStmt r -> {
+                emit("ReadStmt [" + r.getLine() + ":" + r.getColumn() + "]");
+                indentLevel++;
+                emit("variable: " + r.getVariableName());
+                indentLevel--;
+            }
+            case IntLiteral i -> {
+                emit("IntLiteral(" + i.getValue() + ")");
+            }
+            case Identifier id -> {
+                emit("Identifier(" + id.getName() + ")");
+            }
+            case UnaryExpr u -> {
+                emit("UnaryExpr(" + u.getOperator() + ")");
+                indentLevel++;
+                emit("operand:");
+                indentLevel++;
+                print(u.getOperand());
+                indentLevel--;
+                indentLevel--;
+            }
+            case BinaryExpr b -> {
+                emit("BinaryExpr(" + b.getOperator() + ")");
+                indentLevel++;
+                emit("left:");
+                indentLevel++;
+                print(b.getLeft());
+                indentLevel--;
+                emit("right:");
+                indentLevel++;
+                print(b.getRight());
+                indentLevel--;
+                indentLevel--;
+            }
+            default -> throw new IllegalStateException("Unknown AST Node: " + node.getClass().getName());
         }
-        indentLevel--;
-        return null;
-    }
-
-
-    @Override
-    public Void visit(AssignStmt node) {
-        emit("AssignStmt [" + node.getLine() + ":" + node.getColumn() + "]");
-        indentLevel++;
-        emit("variable: " + node.getVariableName());
-        emit("value:");
-        indentLevel++;
-        node.getExpression().accept(this);
-        indentLevel--;
-        indentLevel--;
-        return null;
-    }
-
-    @Override
-    public Void visit(PrintStmt node) {
-        emit("PrintStmt [" + node.getLine() + ":" + node.getColumn() + "]");
-        indentLevel++;
-        node.getExpression().accept(this);
-        indentLevel--;
-        return null;
-    }
-
-    @Override
-    public Void visit(ReadStmt node) {
-        emit("ReadStmt [" + node.getLine() + ":" + node.getColumn() + "]");
-        indentLevel++;
-        emit("variable: " + node.getVariableName());
-        indentLevel--;
-        return null;
-    }
-
-
-    @Override
-    public Void visit(IntLiteral node) {
-        emit("IntLiteral(" + node.getValue() + ")");
-        return null;
-    }
-
-    @Override
-    public Void visit(Identifier node) {
-        emit("Identifier(" + node.getName() + ")");
-        return null;
-    }
-
-    @Override
-    public Void visit(UnaryExpr node) {
-        emit("UnaryExpr(" + node.getOperator() + ")");
-        indentLevel++;
-        emit("operand:");
-        indentLevel++;
-        node.getOperand().accept(this);
-        indentLevel--;
-        indentLevel--;
-        return null;
-    }
-
-    @Override
-    public Void visit(BinaryExpr node) {
-        emit("BinaryExpr(" + node.getOperator() + ")");
-        indentLevel++;
-        emit("left:");
-        indentLevel++;
-        node.getLeft().accept(this);
-        indentLevel--;
-        emit("right:");
-        indentLevel++;
-        node.getRight().accept(this);
-        indentLevel--;
-        indentLevel--;
-        return null;
     }
 }

@@ -17,8 +17,4 @@ public class BinaryExpr extends Expression {
     public String getOperator()     { return operator; }
     public Expression getRight()    { return right; }
 
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
 }

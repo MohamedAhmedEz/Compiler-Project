@@ -12,5 +12,4 @@ public abstract class ASTNode {
     public int getLine()   { return line; }
     public int getColumn() { return column; }
 
-    public abstract <T> T accept(ASTVisitor<T> visitor);
 }

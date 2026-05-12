@@ -10,8 +10,5 @@ public class PrintStmt extends Statement {
 
     public Expression getExpression() { return expression; }
 
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+
 }

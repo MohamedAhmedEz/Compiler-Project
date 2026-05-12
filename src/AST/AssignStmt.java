@@ -14,8 +14,5 @@ public class AssignStmt extends Statement {
     public String getVariableName()        { return variableName; }
     public Expression getExpression()      { return expression; }
 
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+
 }

@@ -10,8 +10,5 @@ public class IntLiteral extends Expression {
 
     public int getValue() { return value; }
 
-    @Override
-    public <T> T accept(ASTVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
+
 }
