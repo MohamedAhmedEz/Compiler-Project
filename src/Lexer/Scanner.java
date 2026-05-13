@@ -4,6 +4,8 @@ import Shared.IScanner;
 import Shared.Token;
 import Shared.TokenType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +14,9 @@ public class Scanner implements IScanner {
     private String source;
     private int    line   = 1;
     private int    column = 1;
+
+    // NEW: Internal list to hold all lexical errors
+    private final List<LexicalError> errors = new ArrayList<>();
 
     private static final Pattern COMMENT_PATTERN    = Pattern.compile("//[^\n]*");
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("[ \t\r\n]+");
@@ -44,6 +49,10 @@ public class Scanner implements IScanner {
         this.tokenMatcher     = TOKEN_PATTERN.matcher(this.source);
     }
 
+    // NEW: Getter so the Server can retrieve the errors
+    public List<LexicalError> getErrors() {
+        return errors;
+    }
 
     private boolean removeComments() {
         commentMatcher.reset(source);
@@ -72,7 +81,6 @@ public class Scanner implements IScanner {
         source = source.substring(count);
     }
 
-
     @Override
     public Token getNextToken() {
         boolean cleaned;
@@ -96,8 +104,16 @@ public class Scanner implements IScanner {
                     return new Token(type, lexeme, tokenLine, tokenColumn);
                 }
             }
+
+            // CHANGED: We found an unknown character!
+            // Log it internally to our new LexicalError list.
             String unknown = tokenMatcher.group("UNKNOWN");
+            errors.add(new LexicalError("Unrecognized char '" + unknown + "'", tokenLine, tokenColumn));
+
             advance(tokenMatcher.end());
+
+            // We still return the ERROR token so the React UI can display it in the grid,
+            // but the Server no longer needs to inspect it.
             return new Token(TokenType.ERROR, unknown, tokenLine, tokenColumn);
         }
 

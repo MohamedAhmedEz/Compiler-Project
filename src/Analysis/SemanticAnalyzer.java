@@ -1,57 +1,54 @@
 package Analysis;
 
 import AST.*;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class SemanticAnalyzer {
 
     private final Set<String> initializedVars = new HashSet<>();
+    // CHANGED: Now uses our new SemanticError class!
+    private final List<SemanticError> errors = new ArrayList<>();
 
-    /**
-     * Entry point for analysis.
-     * Throws a RuntimeException if an uninitialized variable is used.
-     */
+    public List<SemanticError> getErrors() {
+        return errors;
+    }
+
     public void analyze(Program program) {
+        if (program == null || program.getStatements() == null) return;
         for (Statement stmt : program.getStatements()) {
-            analyzeNode(stmt);
+            if (stmt != null) analyzeNode(stmt);
         }
     }
 
     private void analyzeNode(ASTNode node) {
+        if (node == null) return;
+
         switch (node) {
-            case ReadStmt r -> {
-                // 'read x' makes 'x' initialized
-                initializedVars.add(r.getVariableName());
-            }
+            case ReadStmt r -> initializedVars.add(r.getVariableName());
             case AssignStmt a -> {
-                // IMPORTANT: Check the expression first
-                // e.g., in 'x := x + 1', the 'x' on the right must already exist
                 analyzeNode(a.getExpression());
                 initializedVars.add(a.getVariableName());
             }
-            case PrintStmt p -> {
-                analyzeNode(p.getExpression());
-            }
+            case PrintStmt p -> analyzeNode(p.getExpression());
             case BinaryExpr b -> {
                 analyzeNode(b.getLeft());
                 analyzeNode(b.getRight());
             }
-            case UnaryExpr u -> {
-                analyzeNode(u.getOperand());
-            }
+            case UnaryExpr u -> analyzeNode(u.getOperand());
             case Identifier id -> {
-                // The actual check: Is the variable in our set?
                 if (!initializedVars.contains(id.getName())) {
-                    throw new RuntimeException(
-                            String.format("Semantic Error: Variable '%s' used before initialization at line %d, col %d",
-                                    id.getName(), id.getLine(), id.getColumn())
-                    );
+                    // CHANGED: Create a SemanticError object
+                    errors.add(new SemanticError(
+                            "Variable '" + id.getName() + "' used before initialization",
+                            id.getLine(),
+                            id.getColumn()
+                    ));
                 }
             }
-            case IntLiteral i -> {
-                // Numbers don't need initialization
-            }
+            case IntLiteral i -> {}
             default -> {}
         }
     }

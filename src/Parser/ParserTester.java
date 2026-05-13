@@ -109,18 +109,12 @@ public class ParserTester {
             Parser parser = new Parser(scanner);
             Program program = parser.parse();
 
-            /*ASTPrinter printer = new ASTPrinter();
+            ASTPrinter printer = new ASTPrinter();
             printer.print(program);
             System.out.println("AST (partial - error expected):");
-            System.out.println(printer.getResult());*/
+            System.out.println(printer.getResult());
 
-            ASTVisualizer visualizer = new ASTVisualizer();
-            String dotOutput = visualizer.toDotFormat(program);
 
-            System.out.println("AST Graphviz (DOT) Output:");
-            System.out.println("========================================\n");
-            System.out.println(dotOutput);
-            System.out.println("========================================\n");
 
         } catch (ParseError e) {
             System.out.println("Caught error (expected): " + e);

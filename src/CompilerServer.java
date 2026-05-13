@@ -10,6 +10,7 @@ import Parser.ParseError;
 import Shared.Token;
 import Shared.TokenType;
 import Analysis.SemanticAnalyzer;
+import Analysis.SemanticError; // NEW IMPORT
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,8 +74,10 @@ public class CompilerServer {
 
         private String compileToJson(String source) {
             try {
-                // 1. Lexical Analysis: Gather Tokens for the frontend grid
                 List<Token> allTokens = new ArrayList<>();
+                List<String> allErrors = new ArrayList<>();
+
+                // 1. Lexical Analysis
                 Scanner tokenScanner = new Scanner(source);
                 Token t;
                 do {
@@ -82,50 +85,68 @@ public class CompilerServer {
                     allTokens.add(t);
                 } while (t.getType() != TokenType.EOF);
 
-                // 2. Syntax Analysis: Build the AST
-                Parser parser = new Parser(new Scanner(source));
+                String tokensJsonArray = tokensToJsonArray(allTokens);
+
+                // Ask the Scanner for any errors it found internally
+                for (Lexer.LexicalError lexErr : tokenScanner.getErrors()) {
+                    // Assuming your LexicalError class has a getMessage() or toString() method
+                    // If you added a toString() to LexicalError similar to SemanticError, you can just use lexErr.toString()
+                    allErrors.add(escapeJson(lexErr.toString()));
+                }
+
+                // 2. Syntax Analysis
+                Parser parser = new Parser(new Scanner(source)); // Fresh scanner for the parser
                 Program program = parser.parse();
 
-                // 3. Semantic Analysis: Simple variable initialization check
-                // We do this BEFORE visualization to ensure the code is valid
+                // Ask the Parser for any errors it found
+                for (ParseError err : parser.getErrors()) {
+                    allErrors.add("Syntax Error: " + escapeJson(err.getMessage() + " at line " + err.getLine() + ", col " + err.getColumn()));
+                }
+
+                // 3. Semantic Analysis
+                // We run this every time now, letting it analyze the salvaged AST
+                Analysis.SemanticAnalyzer analyzer = new Analysis.SemanticAnalyzer();
+                analyzer.analyze(program);
+
+                // FIXED: Read SemanticError objects instead of Strings
+                for (SemanticError semErr : analyzer.getErrors()) {
+                    allErrors.add(escapeJson(semErr.toString()));
+                }
+
+                boolean hasErrors = !allErrors.isEmpty();
+
+                // 4. Visualization (Generate AST for whatever the parser managed to salvage!)
+                String dotOutput = "";
                 try {
-                    Analysis.SemanticAnalyzer analyzer = new Analysis.SemanticAnalyzer();
-                    analyzer.analyze(program);
-                } catch (RuntimeException semanticError) {
-                    // If initialization check fails, we return success: false
-                    // but still send the tokens so the editor can highlight them
+                    dotOutput = new ASTVisualizer().toDotFormat(program);
+                } catch (Exception ignored) { }
+
+                // 5. Final Response Routing
+                if (hasErrors) {
+                    StringBuilder msgs = new StringBuilder("[");
+                    for (int i = 0; i < allErrors.size(); i++) {
+                        msgs.append(String.format("\"%s\"", allErrors.get(i)));
+                        if (i < allErrors.size() - 1) msgs.append(", ");
+                    }
+                    msgs.append("]");
+
                     return String.format(
-                            "{\"success\": false, \"messages\": [\"%s\"], \"tokens\": %s, \"astDot\": \"\"}",
-                            escapeJson(semanticError.getMessage()),
-                            tokensToJsonArray(allTokens)
+                            "{\"success\": false, \"messages\": %s, \"tokens\": %s, \"astDot\": \"%s\"}",
+                            msgs.toString(), tokensJsonArray, escapeJson(dotOutput)
                     );
                 }
 
-                // 4. Visualization: If all checks pass, generate the Graphviz DOT string
-                String dotOutput = new ASTVisualizer().toDotFormat(program);
-
-                // Convert the Token list into a JSON Array string
-                String tokensJsonArray = tokensToJsonArray(allTokens);
-
                 return String.format(
                         "{\"success\": true, \"messages\": [\"Parsed and Validated successfully\"], \"tokens\": %s, \"astDot\": \"%s\"}",
-                        tokensJsonArray,
-                        escapeJson(dotOutput)
+                        tokensJsonArray, escapeJson(dotOutput)
                 );
 
-            } catch (ParseError e) {
-                // Handle Syntax Errors (e.g., missing semicolons)
-                return String.format(
-                        "{\"success\": false, \"messages\": [\"Syntax Error: %s\"], \"tokens\": [], \"astDot\": \"\"}",
-                        escapeJson(e.getMessage())
-                );
             } catch (Exception e) {
-                // Handle unexpected crashes
+                e.printStackTrace(); // Helpful for debugging server crashes
                 return "{\"success\": false, \"messages\": [\"Internal Server Error\"], \"tokens\": [], \"astDot\": \"\"}";
             }
         }
 
-        // --- NEW HELPER METHOD ---
         // Manually builds a JSON array of token objects: [{"type":"...", "lexeme":"..."}, ...]
         private String tokensToJsonArray(List<Token> tokens) {
             StringBuilder sb = new StringBuilder();
@@ -149,6 +170,7 @@ public class CompilerServer {
             sb.append("]");
             return sb.toString();
         }
+
         // Extracts the value of "sourceCode" from a basic JSON string: {"sourceCode": "x := 10;"}
         private String extractSourceCode(String jsonBody) {
             String target = "\"sourceCode\":";

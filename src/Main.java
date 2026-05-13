@@ -1,25 +1,40 @@
-import Parser.ParserTester;
+import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) throws Exception {
-        System.out.println("What would you like to do?");
-        System.out.println("1. Run AST Console Tests");
-        System.out.println("2. Start React API Server");
-        System.out.print("Enter choice (1 or 2): ");
 
-        // FIX: Use the fully qualified name for the Java input scanner
-        java.util.Scanner input = new java.util.Scanner(System.in);
+    public static void main(String[] args) {
+        Scanner input = new Scanner(System.in);
 
-        int choice = input.nextInt();
 
-        if (choice == 1) {
-            System.out.println("Starting tests...\n");
-            new ParserTester().runTest();
-        } else if (choice == 2) {
-            System.out.println("Starting server...\n");
-            CompilerServer.main(args); // Calls the main method of your server
-        } else {
-            System.out.println("Invalid choice.");
+        System.out.println("Choose an option:");
+        System.out.println("1. Start Web Server");
+        System.out.println("2. Run Console Tester");
+        System.out.print("Enter choice: ");
+
+        String choice = input.nextLine().trim();
+
+        System.out.println();
+
+        switch (choice) {
+            case "1":
+                System.out.println("Starting web server...");
+                try {
+                    CompilerServer.main(args);
+                } catch (Exception e) {
+                    System.out.println("Error " + e.getMessage());
+                }
+                break;
+
+            case "2":
+                System.out.println("Running tester...");
+                CompilerTester.main(args);
+                break;
+
+            default:
+                System.out.println("Invalid choice.");
+                break;
         }
+
+        input.close();
     }
 }
