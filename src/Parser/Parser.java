@@ -12,7 +12,6 @@ public class Parser implements IParser {
 
     private final IScanner scanner;
     private Token currentToken;
-    // NEW: Store errors globally for the Server to read
     private final List<ParseError> errors = new ArrayList<>();
 
     public Parser(IScanner scanner) {
@@ -20,7 +19,6 @@ public class Parser implements IParser {
         advance();
     }
 
-    // NEW: Getter so the Server can check if the parsing was flawless
     public List<ParseError> getErrors() {
         return errors;
     }
@@ -79,7 +77,6 @@ public class Parser implements IParser {
         return new Program(statements);
     }
 
-    // ... (Keep the rest of your parse methods exactly the same: parseStatement, parseAssignStmt, etc.)
 
     private Statement parseStatement() {
         if (check(TokenType.PRINT))      return parsePrintStmt();
