@@ -80,7 +80,7 @@ function App() {
       
     } catch (err) {
       setIsSuccess(false);
-      setMessages(["🚨 Cannot connect to Java API on port 8080"]);
+      setMessages(["Cannot connect to Java API on port 8080"]);
     }
   };
 
@@ -121,7 +121,7 @@ function App() {
       {/* Multi-message display banner */}
       <div className={`status-banner ${isSuccess ? 'success' : 'error'}`}>
         {messages.map((msg, i) => (
-          <div key={i}>{isSuccess ? '✅' : '❌'} {msg}</div>
+          <div key={i}>{msg}</div>
         ))}
       </div>
 
